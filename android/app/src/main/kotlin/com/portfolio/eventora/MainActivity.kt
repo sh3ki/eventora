@@ -1,4 +1,4 @@
-package com.portfolio.eventora
+package com.eventora.app
 
 import io.flutter.embedding.android.FlutterActivity
 
