@@ -4,31 +4,44 @@ import '../theme/app_theme.dart';
 class AppLogo extends StatelessWidget {
   final double size;
   final bool showText;
-  final bool lightText;
+  final bool light;
 
-  const AppLogo({super.key, this.size = 48, this.showText = true, this.lightText = false});
+  const AppLogo({super.key, this.size = 42, this.showText = true, this.light = false});
 
   @override
   Widget build(BuildContext context) {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Container(
-          width: size, height: size,
-          decoration: BoxDecoration(
-            gradient: AppTheme.heroGradient,
-            borderRadius: BorderRadius.circular(size * 0.25),
-            boxShadow: AppTheme.cardShadow,
-          ),
-          child: Center(child: Text('🎪', style: TextStyle(fontSize: size * 0.52))),
+        Image.asset(
+          'assets/images/eventora logo.png',
+          width: size,
+          height: size,
+          fit: BoxFit.contain,
         ),
         if (showText) ...[
-          const SizedBox(width: 10),
+          SizedBox(width: size * 0.2),
           RichText(
-            text: TextSpan(children: [
-              TextSpan(text: 'Event', style: TextStyle(fontFamily: 'DM Sans', fontSize: size * 0.48, fontWeight: FontWeight.w800, color: lightText ? Colors.white : AppTheme.primary)),
-              TextSpan(text: 'ora', style: TextStyle(fontFamily: 'DM Sans', fontSize: size * 0.48, fontWeight: FontWeight.w400, color: lightText ? Colors.white70 : AppTheme.secondary)),
-            ]),
+            text: TextSpan(
+              children: [
+                TextSpan(
+                  text: 'Event',
+                  style: TextStyle(
+                    fontSize: size * 0.45,
+                    fontWeight: FontWeight.w800,
+                    color: light ? Colors.white : AppTheme.textPrimary,
+                  ),
+                ),
+                TextSpan(
+                  text: 'ora',
+                  style: TextStyle(
+                    fontSize: size * 0.45,
+                    fontWeight: FontWeight.w400,
+                    color: light ? Colors.white70 : AppTheme.accent,
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ],
