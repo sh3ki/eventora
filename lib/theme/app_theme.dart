@@ -1,70 +1,70 @@
 import 'package:flutter/material.dart';
 
 class AppTheme {
-  static const Color primary = Color(0xFF7C3AED);    // Purple
-  static const Color secondary = Color(0xFFF59E0B);  // Gold/Amber
-  static const Color accent = Color(0xFFEC4899);     // Pink
-  static const Color success = Color(0xFF10B981);    // Green
-  static const Color surface = Color(0xFFF5F3FF);
+  AppTheme._();
+
+  // Eventora — Elegant Night Palette
+  static const Color primary = Color(0xFF2D3142);
+  static const Color accent = Color(0xFFFF7F50);
+  static const Color secondary = Color(0xFF4F8A8B);
+  static const Color success = Color(0xFF2ECC71);
+  static const Color error = Color(0xFFE74C3C);
+  static const Color surface = Color(0xFFFAFAF8);
   static const Color cardBg = Color(0xFFFFFFFF);
-  static const Color textPrimary = Color(0xFF1E1B4B);
-  static const Color textSecondary = Color(0xFF6B7280);
+  static const Color textPrimary = Color(0xFF2D3142);
+  static const Color textSecondary = Color(0xFF9A9BAE);
+  static const Color divider = Color(0xFFF0F0EC);
 
   static const List<Color> categoryColors = [
-    Color(0xFF7C3AED), // Conference
-    Color(0xFFEC4899), // Wedding
-    Color(0xFF3B82F6), // Birthday
-    Color(0xFF10B981), // Networking
-    Color(0xFFF59E0B), // Music
-    Color(0xFFEF4444), // Sports
-    Color(0xFF06B6D4), // Workshop
-    Color(0xFFF97316), // Festival
+    Color(0xFF6C5CE7),
+    Color(0xFFE17055),
+    Color(0xFF0984E3),
+    Color(0xFF00B894),
+    Color(0xFFFDAA48),
+    Color(0xFFD63031),
+    Color(0xFF00CEC9),
+    Color(0xFFE84393),
   ];
 
-  static LinearGradient get heroGradient => const LinearGradient(
-        colors: [Color(0xFF7C3AED), Color(0xFF6D28D9)],
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-      );
-
-  static LinearGradient get goldGradient => const LinearGradient(
-        colors: [Color(0xFFF59E0B), Color(0xFFD97706)],
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-      );
-
   static List<BoxShadow> get cardShadow => [
-        BoxShadow(color: const Color(0xFF7C3AED).withOpacity(0.1), blurRadius: 16, offset: const Offset(0, 4)),
-      ];
-
-  static List<BoxShadow> get softShadow => [
-        BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 10, offset: const Offset(0, 2)),
-      ];
+    BoxShadow(
+      color: const Color(0xFF2D3142).withOpacity(0.06),
+      blurRadius: 16,
+      offset: const Offset(0, 4),
+    ),
+  ];
 
   static ThemeData get lightTheme {
-    final base = ThemeData(
+    return ThemeData(
       useMaterial3: true,
       colorScheme: ColorScheme.fromSeed(
         seedColor: primary,
         brightness: Brightness.light,
+        primary: primary,
+        secondary: secondary,
         surface: surface,
       ),
-    );
-    return base.copyWith(
       scaffoldBackgroundColor: surface,
-      textTheme: base.textTheme,
-      appBarTheme: AppBarTheme(
+      appBarTheme: const AppBarTheme(
         backgroundColor: Colors.white,
         elevation: 0,
+        scrolledUnderElevation: 0,
         titleTextStyle: TextStyle(
           color: textPrimary,
-          fontWeight: FontWeight.w700,
+          fontWeight: FontWeight.w800,
           fontSize: 20,
         ),
+        iconTheme: IconThemeData(color: textPrimary),
       ),
-      navigationBarTheme: NavigationBarThemeData(
-        backgroundColor: Colors.white,
-        indicatorColor: primary.withOpacity(0.15),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: accent,
+          foregroundColor: Colors.white,
+          elevation: 0,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
+          textStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+        ),
       ),
     );
   }
