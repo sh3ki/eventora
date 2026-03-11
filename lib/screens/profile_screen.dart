@@ -1,136 +1,265 @@
 import 'package:flutter/material.dart';
-import '../data/mock_data.dart';
+import '../data/event_data.dart';
+import '../models/event_model.dart';
 import '../theme/app_theme.dart';
 
-class ProfileScreen extends StatefulWidget {
+class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
 
   @override
-  State<ProfileScreen> createState() => _ProfileScreenState();
-}
-
-class _ProfileScreenState extends State<ProfileScreen> {
-  bool _notifs = true;
-  bool _reminders = true;
-
-  @override
   Widget build(BuildContext context) {
-    final favCount = MockData.favorites.length;
-    final regCount = MockData.registered.length;
+    final registered = EventData.registered;
+    final favorites = EventData.favorites;
+    final tasks = EventData.plannerTasks;
+    final completedTasks = tasks.where((t) => t.isDone).length;
 
     return Scaffold(
       backgroundColor: AppTheme.surface,
-      body: CustomScrollView(
-        slivers: [
-          SliverAppBar(
-            expandedHeight: 200,
-            pinned: true,
-            backgroundColor: AppTheme.primary,
-            title: const Text('Profile', style: TextStyle(color: Colors.white)),
-            flexibleSpace: FlexibleSpaceBar(
-              background: Container(
-                decoration: BoxDecoration(gradient: AppTheme.heroGradient),
-                child: SafeArea(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-                  const SizedBox(height: 20),
-                  Container(
-                    width: 76, height: 76,
-                    decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), shape: BoxShape.circle, border: Border.all(color: Colors.white, width: 3)),
-                    child: const Center(child: Text('🎪', style: TextStyle(fontSize: 38))),
-                  ),
-                  const SizedBox(height: 8),
-                  const Text('Jordan Parker', style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w800)),
-                  const Text('Event Enthusiast', style: TextStyle(color: Colors.white70, fontSize: 13)),
-                ])),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(height: 24),
+              const Text(
+                'Profile',
+                style: TextStyle(
+                  fontSize: 26,
+                  fontWeight: FontWeight.w900,
+                  color: AppTheme.textPrimary,
+                ),
               ),
-            ),
-          ),
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              const SizedBox(height: 24),
+              // Avatar card
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: AppTheme.primary,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Row(
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(18),
+                      child: Image.network(
+                        'https://randomuser.me/api/portraits/men/32.jpg',
+                        width: 60,
+                        height: 60,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => Container(
+                          width: 60,
+                          height: 60,
+                          decoration: BoxDecoration(
+                            color: AppTheme.accent,
+                            borderRadius: BorderRadius.circular(18),
+                          ),
+                          child: const Center(
+                            child: Text(
+                              'AK',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w900,
+                                fontSize: 22,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Alex Kim',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w800,
+                              fontSize: 20,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Event enthusiast · San Francisco',
+                            style: TextStyle(
+                              color: Colors.white.withOpacity(0.6),
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Container(
+                      width: 38, height: 38,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.12),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(Icons.edit_rounded, color: Colors.white, size: 18),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 20),
+              // Stats row
+              Row(
                 children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), boxShadow: AppTheme.softShadow),
-                    child: Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
-                      _Stat('${MockData.events.length}', 'Events'),
-                      _Div(),
-                      _Stat('$regCount', 'Registered'),
-                      _Div(),
-                      _Stat('$favCount', 'Favorites'),
-                    ]),
-                  ),
-                  const SizedBox(height: 24),
-                  const Text('Preferences', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
-                  const SizedBox(height: 12),
-                  Container(
-                    decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), boxShadow: AppTheme.softShadow),
-                    child: Column(children: [
-                      ListTile(
-                        leading: Icon(Icons.notifications_outlined, color: AppTheme.primary),
-                        title: const Text('Event Notifications', style: TextStyle(fontWeight: FontWeight.w500)),
-                        trailing: Switch(value: _notifs, onChanged: (v) => setState(() => _notifs = v), activeColor: AppTheme.primary),
-                      ),
-                      Divider(height: 1, color: Colors.grey[100]),
-                      ListTile(
-                        leading: Icon(Icons.alarm_outlined, color: AppTheme.primary),
-                        title: const Text('Day-Before Reminders', style: TextStyle(fontWeight: FontWeight.w500)),
-                        trailing: Switch(value: _reminders, onChanged: (v) => setState(() => _reminders = v), activeColor: AppTheme.primary),
-                      ),
-                    ]),
-                  ),
-                  const SizedBox(height: 24),
-                  Container(
-                    decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), boxShadow: AppTheme.softShadow),
-                    child: Column(children: [
-                      _Item(Icons.share_outlined, 'Share Eventora', () {}),
-                      Divider(height: 1, color: Colors.grey[100]),
-                      _Item(Icons.help_outline, 'Help & Support', () {}),
-                      Divider(height: 1, color: Colors.grey[100]),
-                      _Item(Icons.info_outline, 'About', () => showAboutDialog(context: context, applicationName: 'Eventora', applicationVersion: '1.0.0')),
-                    ]),
-                  ),
-                  const SizedBox(height: 24),
-                  Center(child: Text('Eventora v1.0.0  ·  Plan. Connect. Celebrate.', style: TextStyle(color: Colors.grey[400], fontSize: 12))),
-                  const SizedBox(height: 20),
+                  _StatCard(value: '${registered.length}', label: 'Registered', color: AppTheme.accent),
+                  const SizedBox(width: 10),
+                  _StatCard(value: '${favorites.length}', label: 'Favorites', color: AppTheme.error),
+                  const SizedBox(width: 10),
+                  _StatCard(value: '$completedTasks/${tasks.length}', label: 'Tasks Done', color: AppTheme.success),
                 ],
               ),
-            ),
+              const SizedBox(height: 24),
+              // Categories breakdown
+              const Text(
+                'Your Interests',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: AppTheme.textPrimary),
+              ),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppTheme.cardBg,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: AppTheme.cardShadow,
+                ),
+                child: Column(
+                  children: EventCategory.values.map((cat) {
+                    final count = EventData.byCategory(cat).length;
+                    final catColor = AppTheme.categoryColors[cat.colorIndex];
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 6),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 8, height: 8,
+                            decoration: BoxDecoration(
+                              color: catColor,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              cat.label,
+                              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: catColor.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              '$count',
+                              style: TextStyle(
+                                color: catColor,
+                                fontWeight: FontWeight.w800,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
+              const SizedBox(height: 24),
+              // Settings items
+              const Text(
+                'Settings',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: AppTheme.textPrimary),
+              ),
+              const SizedBox(height: 12),
+              _SettingsTile(icon: Icons.notifications_outlined, title: 'Notifications', subtitle: 'Event reminders & updates'),
+              _SettingsTile(icon: Icons.palette_outlined, title: 'Appearance', subtitle: 'Theme & display'),
+              _SettingsTile(icon: Icons.lock_outline, title: 'Privacy', subtitle: 'Profile visibility'),
+              _SettingsTile(icon: Icons.help_outline, title: 'Help & Support', subtitle: 'FAQs & contact'),
+              _SettingsTile(icon: Icons.info_outline, title: 'About', subtitle: 'Version 1.0.0'),
+              const SizedBox(height: 30),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
 }
 
-class _Stat extends StatelessWidget {
-  final String value, label;
-  const _Stat(this.value, this.label);
-
-  @override
-  Widget build(BuildContext context) => Column(children: [
-    Text(value, style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: AppTheme.primary)),
-    Text(label, style: const TextStyle(color: Colors.grey, fontSize: 12)),
-  ]);
-}
-
-class _Div extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) => Container(width: 1, height: 36, color: Colors.grey[200]);
-}
-
-class _Item extends StatelessWidget {
-  final IconData icon;
+class _StatCard extends StatelessWidget {
+  final String value;
   final String label;
-  final VoidCallback onTap;
-  const _Item(this.icon, this.label, this.onTap);
+  final Color color;
+
+  const _StatCard({required this.value, required this.label, required this.color});
 
   @override
-  Widget build(BuildContext context) => ListTile(
-    onTap: onTap,
-    leading: Icon(icon, color: AppTheme.primary),
-    title: Text(label, style: const TextStyle(fontWeight: FontWeight.w500)),
-    trailing: const Icon(Icons.chevron_right, color: Colors.grey),
-  );
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.08),
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Column(
+          children: [
+            Text(value, style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: color)),
+            const SizedBox(height: 4),
+            Text(label, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: color.withOpacity(0.7))),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SettingsTile extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+
+  const _SettingsTile({required this.icon, required this.title, required this.subtitle});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppTheme.cardBg,
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: AppTheme.cardShadow,
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 40, height: 40,
+            decoration: BoxDecoration(
+              color: AppTheme.primary.withOpacity(0.06),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(icon, color: AppTheme.primary, size: 20),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: AppTheme.textPrimary)),
+                Text(subtitle, style: TextStyle(fontSize: 12, color: AppTheme.textSecondary)),
+              ],
+            ),
+          ),
+          Icon(Icons.chevron_right_rounded, color: AppTheme.textSecondary.withOpacity(0.5), size: 20),
+        ],
+      ),
+    );
+  }
 }
