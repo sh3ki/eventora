@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../data/mock_data.dart';
+import '../data/event_data.dart';
 import '../models/event_model.dart';
 import '../theme/app_theme.dart';
 import '../widgets/event_card.dart';
@@ -13,94 +13,200 @@ class EventsScreen extends StatefulWidget {
 }
 
 class _EventsScreenState extends State<EventsScreen> {
-  EventCategory? _selected;
-  final _search = TextEditingController();
-  String _query = '';
+  EventCategory? _selectedCategory;
+  String _searchQuery = '';
+  final _searchController = TextEditingController();
 
-  List<Event> get _filtered {
-    var list = _selected == null ? MockData.events : MockData.byCategory(_selected!);
-    if (_query.isNotEmpty) {
-      final q = _query.toLowerCase();
-      list = list.where((e) => e.title.toLowerCase().contains(q) || e.tags.any((t) => t.toLowerCase().contains(q))).toList();
+  List<Event> get _filteredEvents {
+    var list = EventData.events.toList();
+    if (_selectedCategory != null) {
+      list = list.where((e) => e.category == _selectedCategory).toList();
+    }
+    if (_searchQuery.isNotEmpty) {
+      final q = _searchQuery.toLowerCase();
+      list = list.where((e) =>
+          e.title.toLowerCase().contains(q) ||
+          e.location.toLowerCase().contains(q) ||
+          e.organizer.toLowerCase().contains(q) ||
+          e.tags.any((t) => t.toLowerCase().contains(q))
+      ).toList();
     }
     return list;
   }
 
   @override
-  void dispose() { _search.dispose(); super.dispose(); }
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
+    final events = _filteredEvents;
+
     return Scaffold(
       backgroundColor: AppTheme.surface,
-      appBar: AppBar(title: const Text('Browse Events'), backgroundColor: Colors.white, elevation: 0),
-      body: Column(
-        children: [
-          Container(
-            color: Colors.white,
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-            child: Column(
-              children: [
-                TextField(
-                  controller: _search,
-                  onChanged: (v) => setState(() => _query = v),
-                  decoration: InputDecoration(
-                    hintText: 'Search events...',
-                    prefixIcon: const Icon(Icons.search_rounded),
-                    suffixIcon: _query.isNotEmpty ? IconButton(icon: const Icon(Icons.clear), onPressed: () => setState(() { _query = ''; _search.clear(); })) : null,
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-                    filled: true, fillColor: Colors.grey[100],
+      body: SafeArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Title + Search
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 24, 20, 0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Browse Events',
+                    style: TextStyle(
+                      fontSize: 26,
+                      fontWeight: FontWeight.w900,
+                      color: AppTheme.textPrimary,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 10),
-                SizedBox(
-                  height: 38,
-                  child: ListView(
-                    scrollDirection: Axis.horizontal,
-                    children: [
-                      _Pill('All', _selected == null, () => setState(() => _selected = null)),
-                      ...MockData.allCategories.map((cat) => _Pill(
-                        '${cat.emoji} ${cat.label}', _selected == cat,
-                        () => setState(() => _selected = _selected == cat ? null : cat),
-                      )),
-                    ],
+                  const SizedBox(height: 16),
+                  // Search bar
+                  Container(
+                    decoration: BoxDecoration(
+                      color: AppTheme.cardBg,
+                      borderRadius: BorderRadius.circular(14),
+                      boxShadow: AppTheme.cardShadow,
+                    ),
+                    child: TextField(
+                      controller: _searchController,
+                      onChanged: (v) => setState(() => _searchQuery = v),
+                      decoration: InputDecoration(
+                        hintText: 'Search events, venues, topics...',
+                        hintStyle: TextStyle(
+                          color: AppTheme.textSecondary,
+                          fontWeight: FontWeight.w500,
+                          fontSize: 14,
+                        ),
+                        prefixIcon: const Icon(Icons.search_rounded, color: AppTheme.textSecondary),
+                        suffixIcon: _searchQuery.isNotEmpty
+                            ? IconButton(
+                                icon: const Icon(Icons.close, size: 18),
+                                onPressed: () {
+                                  _searchController.clear();
+                                  setState(() => _searchQuery = '');
+                                },
+                              )
+                            : null,
+                        border: InputBorder.none,
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                      ),
+                    ),
                   ),
+                ],
+              ),
+            ),
+            // Category chips
+            const SizedBox(height: 16),
+            SizedBox(
+              height: 38,
+              child: ListView(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                children: [
+                  _CategoryChip(
+                    label: 'All',
+                    isSelected: _selectedCategory == null,
+                    onTap: () => setState(() => _selectedCategory = null),
+                  ),
+                  ...EventCategory.values.map((cat) => _CategoryChip(
+                    label: cat.label,
+                    color: AppTheme.categoryColors[cat.colorIndex],
+                    isSelected: _selectedCategory == cat,
+                    onTap: () => setState(() => _selectedCategory = _selectedCategory == cat ? null : cat),
+                  )),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            // Results count
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Text(
+                '${events.length} event${events.length == 1 ? '' : 's'} found',
+                style: TextStyle(
+                  fontSize: 13,
+                  color: AppTheme.textSecondary,
+                  fontWeight: FontWeight.w500,
                 ),
-              ],
+              ),
             ),
-          ),
-          Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: _filtered.length,
-              itemBuilder: (_, i) {
-                final e = _filtered[i];
-                return EventCard(
-                  event: e,
-                  compact: true,
-                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => EventDetailScreen(event: e))),
-                  onFavoriteToggle: (_) => setState(() => e.isFavorite = !e.isFavorite),
-                );
-              },
+            const SizedBox(height: 8),
+            // Event list
+            Expanded(
+              child: events.isEmpty
+                  ? Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.event_busy, size: 56, color: AppTheme.textSecondary.withOpacity(0.4)),
+                          const SizedBox(height: 12),
+                          Text(
+                            'No events found',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: AppTheme.textSecondary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  : ListView.builder(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      itemCount: events.length,
+                      itemBuilder: (context, i) => EventCard(
+                        event: events[i],
+                        onTap: () => Navigator.push(context, MaterialPageRoute(
+                          builder: (_) => EventDetailScreen(event: events[i]),
+                        )),
+                      ),
+                    ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
+}
 
-  Widget _Pill(String label, bool selected, VoidCallback onTap) {
+class _CategoryChip extends StatelessWidget {
+  final String label;
+  final Color? color;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const _CategoryChip({
+    required this.label,
+    this.color,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final chipColor = color ?? AppTheme.primary;
     return GestureDetector(
       onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
+      child: Container(
         margin: const EdgeInsets.only(right: 8),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         decoration: BoxDecoration(
-          color: selected ? AppTheme.primary : Colors.grey[100],
-          borderRadius: BorderRadius.circular(20),
+          color: isSelected ? chipColor : chipColor.withOpacity(0.08),
+          borderRadius: BorderRadius.circular(10),
         ),
-        child: Text(label, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: selected ? Colors.white : Colors.grey[700])),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: isSelected ? Colors.white : chipColor,
+            fontWeight: FontWeight.w700,
+            fontSize: 13,
+          ),
+        ),
       ),
     );
   }
