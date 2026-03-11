@@ -12,141 +12,381 @@ class EventDetailScreen extends StatefulWidget {
 }
 
 class _EventDetailScreenState extends State<EventDetailScreen> {
+  late Event event;
+
+  @override
+  void initState() {
+    super.initState();
+    event = widget.event;
+  }
+
   @override
   Widget build(BuildContext context) {
-    final e = widget.event;
-    final color = AppTheme.categoryColors[e.category.colorIndex % AppTheme.categoryColors.length];
+    final catColor = AppTheme.categoryColors[event.category.colorIndex];
 
     return Scaffold(
       backgroundColor: AppTheme.surface,
       body: CustomScrollView(
         slivers: [
+          // Image header
           SliverAppBar(
-            expandedHeight: 240,
+            expandedHeight: 260,
             pinned: true,
-            backgroundColor: color,
-            leading: BackButton(color: Colors.white),
+            backgroundColor: AppTheme.primary,
+            leading: GestureDetector(
+              onTap: () => Navigator.pop(context),
+              child: Container(
+                margin: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.3),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(Icons.arrow_back_rounded, color: Colors.white),
+              ),
+            ),
             actions: [
-              IconButton(
-                icon: Icon(e.isFavorite ? Icons.favorite : Icons.favorite_border, color: Colors.white),
-                onPressed: () => setState(() => e.isFavorite = !e.isFavorite),
+              GestureDetector(
+                onTap: () => setState(() => event.isFavorite = !event.isFavorite),
+                child: Container(
+                  margin: const EdgeInsets.all(8),
+                  width: 40, height: 40,
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    event.isFavorite ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                    color: event.isFavorite ? AppTheme.accent : Colors.white,
+                    size: 20,
+                  ),
+                ),
               ),
             ],
             flexibleSpace: FlexibleSpaceBar(
-              background: Container(
-                decoration: BoxDecoration(gradient: LinearGradient(colors: [color, color.withOpacity(0.7)], begin: Alignment.topLeft, end: Alignment.bottomRight)),
-                child: Center(child: Text(e.emoji, style: const TextStyle(fontSize: 80))),
-              ),
+              background: event.imageUrl != null
+                  ? Image.network(
+                      event.imageUrl!,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => Container(
+                        color: catColor.withOpacity(0.3),
+                        child: Icon(Icons.event, size: 64, color: catColor),
+                      ),
+                    )
+                  : Container(
+                      color: catColor.withOpacity(0.3),
+                      child: Icon(Icons.event, size: 64, color: catColor),
+                    ),
             ),
           ),
-
+          // Content
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.all(20),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(e.category.label, style: TextStyle(color: color, fontWeight: FontWeight.w700, fontSize: 13)),
-                  const SizedBox(height: 8),
-                  Text(e.title, style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w800)),
-                  const SizedBox(height: 10),
-                  Text(e.description, style: TextStyle(color: Colors.grey[600], height: 1.6)),
+                  // Category + Status
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                        decoration: BoxDecoration(
+                          color: catColor,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          event.category.label,
+                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 12),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                        decoration: BoxDecoration(
+                          color: _statusColor(event.status).withOpacity(0.12),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          event.status.label,
+                          style: TextStyle(
+                            color: _statusColor(event.status),
+                            fontWeight: FontWeight.w700,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ),
+                      const Spacer(),
+                      // Price
+                      Text(
+                        event.isFree ? 'Free' : '\$${event.price.toStringAsFixed(0)}',
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.w900,
+                          color: event.isFree ? AppTheme.success : AppTheme.accent,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  // Title
+                  Text(
+                    event.title,
+                    style: const TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.w900,
+                      color: AppTheme.textPrimary,
+                      height: 1.2,
+                    ),
+                  ),
                   const SizedBox(height: 20),
-
-                  // Key info
+                  // Info cards
+                  _DetailCard(
+                    icon: Icons.calendar_today_rounded,
+                    title: DateFormat('EEEE, MMMM d, y').format(event.date),
+                    subtitle: event.time,
+                    color: catColor,
+                  ),
+                  const SizedBox(height: 10),
+                  _DetailCard(
+                    icon: Icons.location_on_rounded,
+                    title: event.location,
+                    subtitle: 'Tap for directions',
+                    color: catColor,
+                  ),
+                  const SizedBox(height: 10),
+                  _DetailCard(
+                    icon: Icons.person_rounded,
+                    title: event.organizer,
+                    subtitle: 'Organizer',
+                    color: catColor,
+                  ),
+                  const SizedBox(height: 20),
+                  // Description
+                  const Text(
+                    'About',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                      color: AppTheme.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    event.description,
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: AppTheme.textSecondary,
+                      height: 1.6,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  // Attendance bar
+                  const Text(
+                    'Attendance',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                      color: AppTheme.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
                   Container(
                     padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), boxShadow: AppTheme.softShadow),
+                    decoration: BoxDecoration(
+                      color: AppTheme.cardBg,
+                      borderRadius: BorderRadius.circular(14),
+                      boxShadow: AppTheme.cardShadow,
+                    ),
                     child: Column(
                       children: [
-                        _InfoRow(icon: Icons.calendar_today_outlined, label: 'Date & Time', value: '${DateFormat('EEEE, MMMM d, yyyy').format(e.date)} at ${e.time}'),
-                        const Divider(height: 20),
-                        _InfoRow(icon: Icons.location_on_outlined, label: 'Location', value: e.location),
-                        const Divider(height: 20),
-                        _InfoRow(icon: Icons.person_outline, label: 'Organizer', value: e.organizer),
-                        const Divider(height: 20),
-                        _InfoRow(icon: Icons.people_outline, label: 'Attendees', value: '${e.attendees} / ${e.maxAttendees} (${(e.fillRate * 100).toInt()}% full)'),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              '${event.attendees} attending',
+                              style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+                            ),
+                            Text(
+                              '${event.maxAttendees} max',
+                              style: TextStyle(color: AppTheme.textSecondary, fontSize: 13),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(6),
+                          child: LinearProgressIndicator(
+                            value: event.fillRate,
+                            backgroundColor: AppTheme.divider,
+                            valueColor: AlwaysStoppedAnimation(
+                              event.isFull ? AppTheme.error : catColor,
+                            ),
+                            minHeight: 8,
+                          ),
+                        ),
+                        if (event.isFull) ...[
+                          const SizedBox(height: 8),
+                          Text(
+                            'This event is fully booked',
+                            style: TextStyle(color: AppTheme.error, fontWeight: FontWeight.w600, fontSize: 12),
+                          ),
+                        ],
                       ],
                     ),
                   ),
-                  const SizedBox(height: 16),
-
-                  // Attendees progress
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(6),
-                    child: LinearProgressIndicator(
-                      value: e.fillRate,
-                      backgroundColor: Colors.grey[200],
-                      valueColor: AlwaysStoppedAnimation<Color>(e.isFull ? Colors.red : color),
-                      minHeight: 8,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(e.isFull ? '⚠️ Event is full' : '${e.maxAttendees - e.attendees} spots remaining',
-                      style: TextStyle(fontSize: 12, color: e.isFull ? Colors.red : Colors.grey[600])),
                   const SizedBox(height: 20),
-
                   // Tags
-                  Wrap(
-                    spacing: 8, runSpacing: 8,
-                    children: e.tags.map((t) => Chip(
-                      label: Text(t),
-                      backgroundColor: color.withOpacity(0.1),
-                      labelStyle: TextStyle(color: color, fontSize: 12),
-                      padding: EdgeInsets.zero,
-                    )).toList(),
-                  ),
-                  const SizedBox(height: 24),
-
-                  // Register button
-                  SizedBox(
-                    width: double.infinity,
-                    height: 54,
-                    child: ElevatedButton(
-                      onPressed: e.isFull && !e.isRegistered ? null : () => setState(() => e.isRegistered = !e.isRegistered),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: e.isRegistered ? AppTheme.success : color,
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                      ),
-                      child: Text(
-                        e.isRegistered ? '✓ Registered — Cancel' : e.isFull ? 'Event Full' : e.isFree ? 'Register for Free' : 'Register — \$${e.price.toStringAsFixed(0)}',
-                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
-                      ),
+                  if (event.tags.isNotEmpty) ...[
+                    const Text(
+                      'Tags',
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: AppTheme.textPrimary),
                     ),
-                  ),
-                  const SizedBox(height: 20),
+                    const SizedBox(height: 10),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: event.tags.map((tag) => Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: catColor.withOpacity(0.08),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          '#$tag',
+                          style: TextStyle(
+                            color: catColor,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 12,
+                          ),
+                        ),
+                      )).toList(),
+                    ),
+                  ],
+                  const SizedBox(height: 100),
                 ],
               ),
             ),
           ),
         ],
       ),
+      // Register button
+      bottomSheet: Container(
+        padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          boxShadow: [
+            BoxShadow(
+              color: AppTheme.primary.withOpacity(0.08),
+              blurRadius: 20,
+              offset: const Offset(0, -4),
+            ),
+          ],
+        ),
+        child: SafeArea(
+          child: SizedBox(
+            width: double.infinity,
+            height: 54,
+            child: ElevatedButton(
+              onPressed: event.isFull && !event.isRegistered
+                  ? null
+                  : () {
+                      setState(() => event.isRegistered = !event.isRegistered);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            event.isRegistered ? 'Registered successfully!' : 'Registration cancelled',
+                          ),
+                          backgroundColor: event.isRegistered ? AppTheme.success : AppTheme.textSecondary,
+                          behavior: SnackBarBehavior.floating,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        ),
+                      );
+                    },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: event.isRegistered ? AppTheme.primary : AppTheme.accent,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              ),
+              child: Text(
+                event.isRegistered ? 'Cancel Registration' : (event.isFull ? 'Fully Booked' : 'Register Now'),
+                style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16, color: Colors.white),
+              ),
+            ),
+          ),
+        ),
+      ),
     );
+  }
+
+  Color _statusColor(EventStatus status) {
+    switch (status) {
+      case EventStatus.upcoming:
+        return AppTheme.secondary;
+      case EventStatus.ongoing:
+        return AppTheme.success;
+      case EventStatus.past:
+        return AppTheme.textSecondary;
+      case EventStatus.cancelled:
+        return AppTheme.error;
+    }
   }
 }
 
-class _InfoRow extends StatelessWidget {
+class _DetailCard extends StatelessWidget {
   final IconData icon;
-  final String label, value;
-  const _InfoRow({required this.icon, required this.label, required this.value});
+  final String title;
+  final String subtitle;
+  final Color color;
+
+  const _DetailCard({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.color,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Icon(icon, color: AppTheme.primary, size: 20),
-        const SizedBox(width: 12),
-        Expanded(child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(label, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12, color: Colors.grey)),
-            const SizedBox(height: 2),
-            Text(value, style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14)),
-          ],
-        )),
-      ],
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppTheme.cardBg,
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: AppTheme.cardShadow,
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(icon, color: color, size: 20),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 14,
+                    color: AppTheme.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  subtitle,
+                  style: TextStyle(fontSize: 12, color: AppTheme.textSecondary),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
