@@ -50,7 +50,7 @@ class Event {
   final int maxAttendees;
   final double price;
   final List<String> tags;
-  final String emoji;
+  final String? imageUrl;
   final bool isFeatured;
   bool isRegistered;
   bool isFavorite;
@@ -67,8 +67,8 @@ class Event {
     required this.attendees,
     required this.maxAttendees,
     required this.price,
-    required this.tags,
-    required this.emoji,
+    this.tags = const [],
+    this.imageUrl,
     this.isFeatured = false,
     this.isRegistered = false,
     this.isFavorite = false,
