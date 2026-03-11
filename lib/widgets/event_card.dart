@@ -6,59 +6,234 @@ import '../theme/app_theme.dart';
 class EventCard extends StatelessWidget {
   final Event event;
   final VoidCallback? onTap;
-  final ValueChanged<bool>? onFavoriteToggle;
   final bool compact;
 
-  const EventCard({super.key, required this.event, this.onTap, this.onFavoriteToggle, this.compact = false});
+  const EventCard({
+    super.key,
+    required this.event,
+    this.onTap,
+    this.compact = false,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return compact
-        ? _CompactCard(event: event, onTap: onTap, onFavoriteToggle: onFavoriteToggle)
-        : _FullCard(event: event, onTap: onTap, onFavoriteToggle: onFavoriteToggle);
+    if (compact) return _buildCompact(context);
+    return _buildFull(context);
   }
-}
 
-class _FullCard extends StatelessWidget {
-  final Event event;
-  final VoidCallback? onTap;
-  final ValueChanged<bool>? onFavoriteToggle;
-
-  const _FullCard({required this.event, this.onTap, this.onFavoriteToggle});
-
-  @override
-  Widget build(BuildContext context) {
-    final color = AppTheme.categoryColors[event.category.colorIndex % AppTheme.categoryColors.length];
+  Widget _buildFull(BuildContext context) {
+    final catColor = AppTheme.categoryColors[event.category.colorIndex];
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        margin: const EdgeInsets.only(right: 16),
-        width: 260,
+        margin: const EdgeInsets.only(bottom: 16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppTheme.cardBg,
           borderRadius: BorderRadius.circular(18),
           boxShadow: AppTheme.cardShadow,
         ),
+        clipBehavior: Clip.antiAlias,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              height: 120,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(colors: [color, color.withOpacity(0.6)], begin: Alignment.topLeft, end: Alignment.bottomRight),
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
-              ),
+            // Image header
+            SizedBox(
+              height: 160,
+              width: double.infinity,
               child: Stack(
+                fit: StackFit.expand,
                 children: [
-                  Center(child: Text(event.emoji, style: const TextStyle(fontSize: 52))),
-                  Positioned(top: 10, left: 10, child: _StatusBadge(status: event.status)),
-                  Positioned(top: 8, right: 8,
-                    child: GestureDetector(
-                      onTap: () => onFavoriteToggle?.call(!event.isFavorite),
-                      child: Container(
-                        padding: const EdgeInsets.all(6),
-                        decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
-                        child: Icon(event.isFavorite ? Icons.favorite : Icons.favorite_border, color: event.isFavorite ? Colors.red : Colors.grey, size: 16),
+                  if (event.imageUrl != null)
+                    Image.network(
+                      event.imageUrl!,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => Container(
+                        color: catColor.withOpacity(0.15),
+                        child: Icon(Icons.event, size: 48, color: catColor),
+                      ),
+                    )
+                  else
+                    Container(
+                      color: catColor.withOpacity(0.15),
+                      child: Icon(Icons.event, size: 48, color: catColor),
+                    ),
+                  // Category chip overlay
+                  Positioned(
+                    top: 12,
+                    left: 12,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: catColor,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        event.category.label,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 11,
+                        ),
+                      ),
+                    ),
+                  ),
+                  // Price badge
+                  Positioned(
+                    top: 12,
+                    right: 12,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: AppTheme.primary.withOpacity(0.85),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        event.isFree ? 'FREE' : '\$${event.price.toStringAsFixed(0)}',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            // Details
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    event.title,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w800,
+                      fontSize: 17,
+                      color: AppTheme.textPrimary,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 10),
+                  _InfoRow(
+                    icon: Icons.calendar_today_rounded,
+                    text: DateFormat('EEE, MMM d · ').format(event.date) + event.time,
+                  ),
+                  const SizedBox(height: 6),
+                  _InfoRow(
+                    icon: Icons.location_on_outlined,
+                    text: event.location,
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      // Attendees
+                      Icon(Icons.people_outline, size: 15, color: AppTheme.textSecondary),
+                      const SizedBox(width: 4),
+                      Text(
+                        '${event.attendees}/${event.maxAttendees}',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: AppTheme.textSecondary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      // Fill bar
+                      Expanded(
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(4),
+                          child: LinearProgressIndicator(
+                            value: event.fillRate,
+                            backgroundColor: AppTheme.divider,
+                            valueColor: AlwaysStoppedAnimation(
+                              event.fillRate > 0.9 ? AppTheme.error : catColor,
+                            ),
+                            minHeight: 4,
+                          ),
+                        ),
+                      ),
+                      if (event.isFeatured) ...[
+                        const SizedBox(width: 12),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: AppTheme.accent.withOpacity(0.12),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: const Text(
+                            'FEATURED',
+                            style: TextStyle(
+                              color: AppTheme.accent,
+                              fontWeight: FontWeight.w800,
+                              fontSize: 10,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCompact(BuildContext context) {
+    final catColor = AppTheme.categoryColors[event.category.colorIndex];
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 200,
+        margin: const EdgeInsets.only(right: 14),
+        decoration: BoxDecoration(
+          color: AppTheme.cardBg,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: AppTheme.cardShadow,
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SizedBox(
+              height: 100,
+              width: double.infinity,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  if (event.imageUrl != null)
+                    Image.network(
+                      event.imageUrl!,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => Container(
+                        color: catColor.withOpacity(0.15),
+                        child: Icon(Icons.event, size: 32, color: catColor),
+                      ),
+                    )
+                  else
+                    Container(
+                      color: catColor.withOpacity(0.15),
+                      child: Icon(Icons.event, size: 32, color: catColor),
+                    ),
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: AppTheme.primary.withOpacity(0.85),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        event.isFree ? 'FREE' : '\$${event.price.toStringAsFixed(0)}',
+                        style: const TextStyle(
+                          color: Colors.white, fontWeight: FontWeight.w800, fontSize: 10,
+                        ),
                       ),
                     ),
                   ),
@@ -66,99 +241,43 @@ class _FullCard extends StatelessWidget {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.all(14),
+              padding: const EdgeInsets.all(10),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(event.category.label, style: TextStyle(color: color, fontWeight: FontWeight.w700, fontSize: 11)),
-                  const SizedBox(height: 4),
-                  Text(event.title, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15), maxLines: 2, overflow: TextOverflow.ellipsis),
-                  const SizedBox(height: 8),
-                  Row(children: [
-                    const Icon(Icons.calendar_today_outlined, size: 12, color: Colors.grey),
-                    const SizedBox(width: 4),
-                    Text(DateFormat('MMM d, yyyy').format(event.date), style: const TextStyle(fontSize: 12, color: Colors.grey)),
-                  ]),
-                  const SizedBox(height: 4),
-                  Row(children: [
-                    const Icon(Icons.location_on_outlined, size: 12, color: Colors.grey),
-                    const SizedBox(width: 4),
-                    Expanded(child: Text(event.location, style: const TextStyle(fontSize: 12, color: Colors.grey), maxLines: 1, overflow: TextOverflow.ellipsis)),
-                  ]),
-                  const SizedBox(height: 8),
-                  Row(children: [
-                    Text(event.isFree ? 'FREE' : '\$${event.price.toStringAsFixed(0)}',
-                        style: TextStyle(fontWeight: FontWeight.w800, color: event.isFree ? AppTheme.success : AppTheme.primary, fontSize: 14)),
-                    const Spacer(),
-                    Text('${event.attendees} attending', style: const TextStyle(fontSize: 11, color: Colors.grey)),
-                  ]),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _CompactCard extends StatelessWidget {
-  final Event event;
-  final VoidCallback? onTap;
-  final ValueChanged<bool>? onFavoriteToggle;
-
-  const _CompactCard({required this.event, this.onTap, this.onFavoriteToggle});
-
-  @override
-  Widget build(BuildContext context) {
-    final color = AppTheme.categoryColors[event.category.colorIndex % AppTheme.categoryColors.length];
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: AppTheme.softShadow,
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 54, height: 54,
-              decoration: BoxDecoration(gradient: LinearGradient(colors: [color, color.withOpacity(0.6)]), borderRadius: BorderRadius.circular(14)),
-              child: Center(child: Text(event.emoji, style: const TextStyle(fontSize: 26))),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(children: [
-                    _CategoryDot(color: color),
-                    const SizedBox(width: 4),
-                    Text(event.category.label, style: TextStyle(color: color, fontWeight: FontWeight.w600, fontSize: 11)),
-                  ]),
-                  const SizedBox(height: 3),
-                  Text(event.title, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14), maxLines: 1, overflow: TextOverflow.ellipsis),
-                  const SizedBox(height: 3),
-                  Text('${DateFormat('MMM d').format(event.date)} • ${event.time}', style: const TextStyle(fontSize: 12, color: Colors.grey)),
-                ],
-              ),
-            ),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(event.isFree ? 'FREE' : '\$${event.price.toStringAsFixed(0)}',
-                    style: TextStyle(fontWeight: FontWeight.w800, color: event.isFree ? AppTheme.success : AppTheme.primary, fontSize: 13)),
-                const SizedBox(height: 4),
-                if (event.isRegistered)
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                    decoration: BoxDecoration(color: AppTheme.success.withOpacity(0.12), borderRadius: BorderRadius.circular(10)),
-                    child: Text('Registered', style: TextStyle(color: AppTheme.success, fontSize: 10, fontWeight: FontWeight.w700)),
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: catColor.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      event.category.label,
+                      style: TextStyle(
+                        color: catColor,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 10,
+                      ),
+                    ),
                   ),
-              ],
+                  const SizedBox(height: 6),
+                  Text(
+                    event.title,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 13,
+                      color: AppTheme.textPrimary,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    DateFormat('MMM d').format(event.date) + ' · ' + event.time,
+                    style: TextStyle(fontSize: 11, color: AppTheme.textSecondary),
+                  ),
+                ],
+              ),
             ),
           ],
         ),
@@ -167,24 +286,25 @@ class _CompactCard extends StatelessWidget {
   }
 }
 
-class _StatusBadge extends StatelessWidget {
-  final EventStatus status;
-  const _StatusBadge({required this.status});
+class _InfoRow extends StatelessWidget {
+  final IconData icon;
+  final String text;
+  const _InfoRow({required this.icon, required this.text});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration: BoxDecoration(color: Colors.white.withOpacity(0.9), borderRadius: BorderRadius.circular(20)),
-      child: Text(status.label, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700)),
+    return Row(
+      children: [
+        Icon(icon, size: 14, color: AppTheme.textSecondary),
+        const SizedBox(width: 6),
+        Expanded(
+          child: Text(
+            text,
+            style: TextStyle(fontSize: 13, color: AppTheme.textSecondary, fontWeight: FontWeight.w500),
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
     );
   }
-}
-
-class _CategoryDot extends StatelessWidget {
-  final Color color;
-  const _CategoryDot({required this.color});
-
-  @override
-  Widget build(BuildContext context) => Container(width: 6, height: 6, decoration: BoxDecoration(color: color, shape: BoxShape.circle));
 }
